@@ -1,0 +1,33 @@
+name: Build ForceiPhoneUI Dylib
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile arm64 and arm64e Dylib
+        run: |
+          SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          clang -dynamiclib \
+            -arch arm64 -arch arm64e \
+            -isysroot "$SDK_PATH" \
+            -miphoneos-version-min=15.0 \
+            -framework UIKit \
+            -framework Foundation \
+            -fobjc-arc \
+            ForceiPhoneUI.m -o ForceiPhoneUI.dylib
+          ldid -S ForceiPhoneUI.dylib || codesign -f -s - ForceiPhoneUI.dylib
+
+      - name: Upload Compiled Dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: ForceiPhoneUI-Dylib
+          path: ForceiPhoneUI.dylib
